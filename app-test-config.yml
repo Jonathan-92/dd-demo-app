@@ -1,6 +1,12 @@
 server:
   rootPath: /api/
-
+  applicationConnectors:
+  - type: http
+    port: 18090
+  adminConnectors:
+  - type: http
+    port: 18091
+    
 database:
   # the name of your JDBC driver
   driverClass: org.h2.Driver
@@ -41,6 +47,3 @@ database:
 
   # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
   minIdleTime: 1 minute
-
-swagger:
-  resourcePackage: org.dd.demoapp.delegate,org.dd.demoapp.question

@@ -11,14 +11,14 @@ import io.dropwizard.java8.jdbi.DBIFactory;
 import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.federecio.dropwizard.swagger.SwaggerBundle;
+import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration;
 import org.dd.demoapp.common.DateTimeService;
 import org.dd.demoapp.config.AppConfig;
+import org.dd.demoapp.delegate.DelegateDAO;
 import org.dd.demoapp.question.QuestionDAO;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.skife.jdbi.v2.DBI;
-
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 public class App extends Application<AppConfig> {
 
@@ -31,6 +31,12 @@ public class App extends Application<AppConfig> {
         bootstrap.addBundle(new Java8Bundle());
         bootstrap.addBundle(new AssetsBundle("/app", "/", "index.html"));
         bootstrap.addBundle(new DBIExceptionsBundle());
+        bootstrap.addBundle(new SwaggerBundle<AppConfig>() {
+            @Override
+            protected SwaggerBundleConfiguration getSwaggerBundleConfiguration(AppConfig configuration) {
+                return configuration.swaggerBundleConfiguration;
+            }
+        });
     }
 
     @Override
@@ -43,9 +49,13 @@ public class App extends Application<AppConfig> {
             @Override
             protected void configure() {
                 QuestionDAO questionDAO = jdbi.onDemand(QuestionDAO.class);
-                initDb(questionDAO);
+                questionDAO.initDb();
+
+                DelegateDAO delegateDAO = jdbi.onDemand(DelegateDAO.class);
+                delegateDAO.initDb();
 
                 bind(questionDAO).to(QuestionDAO.class);
+                bind(delegateDAO).to(DelegateDAO.class);
                 bind(DateTimeService.class).to(DateTimeService.class);
             }
         });
@@ -59,14 +69,6 @@ public class App extends Application<AppConfig> {
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS);
         objectMapper.disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS);
-    }
-
-    // TODO if and when upgraded to jdbi 3, this can be a default method in the DAO
-    void initDb(QuestionDAO questionDAO) {
-        questionDAO.createDb();
-        questionDAO.insertRow("Ska Sverige ha ID-kontroller?", LocalDateTime.of(2015, 11, 20, 23, 59).toInstant(ZoneOffset.UTC));
-        questionDAO.insertRow("Ska Sverige få ha avtal med Diktaturer?", LocalDateTime.of(2016, 3, 20, 23, 59).toInstant(ZoneOffset.UTC));
-        questionDAO.insertRow("Ska Sverige utöka försvarsbudgeten med x antal kr?", LocalDateTime.of(2016, 3, 23, 23, 59).toInstant(ZoneOffset.UTC));
     }
 
     @Override
